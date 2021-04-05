@@ -1,6 +1,7 @@
 mod chip8;
 mod cpu;
 mod memory;
+mod screen;
 
 use chip8::Emulator;
 use std::env;
