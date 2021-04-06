@@ -69,7 +69,7 @@ impl Screen {
 
         let update_rate = 1_000_000 / FPS;
 
-        window.limit_update_rate(Some(std::time::Duration::from_micros(update_rate)));
+        //window.limit_update_rate(Some(std::time::Duration::from_micros(update_rate)));
         Self {
             buffer: [0; WIDTH * HEIGHT],
             window,
