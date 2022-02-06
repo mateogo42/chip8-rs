@@ -5,7 +5,17 @@ authors = ["mateo"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "chip8"
+path = "src/chip8.rs"
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-minifb = "0.19.3"
+getrandom = { version = "0.2.4", features = ["js"]}
 rand = "0.8.0"
+wasm-bindgen = "0.2.79"
+wee_alloc = { version = "0.4.5", optional = true }
+
+
+[profile.release]
+opt-level = "s"

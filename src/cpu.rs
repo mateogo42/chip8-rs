@@ -1,8 +1,5 @@
 use super::memory::Memory;
-use super::screen::{key_to_hex, Screen};
 use rand::prelude::*;
-
-const FG_COLOR: u32 = 0x61AFEF;
 
 #[derive(Debug)]
 pub struct CPU {
@@ -44,10 +41,10 @@ impl CPU {
         }
     }
 
-    pub fn clear_screen(&mut self, screen: &mut Screen) {
-        screen.clear();
-        self.pc += 2;
-    }
+    // pub fn clear_screen(&mut self, screen: &mut Screen) {
+    //     screen.clear();
+    //     self.pc += 2;
+    // }
 
     pub fn return_from_subroutine(&mut self) {
         self.sp -= 1;
@@ -175,7 +172,7 @@ impl CPU {
         self.pc += 2;
     }
 
-    pub fn update_sprite(&mut self, memory: &Memory, buffer: &mut [u32], x: u8, y: u8, n: u8) {
+    pub fn update_sprite(&mut self, memory: &Memory, buffer: &mut [u8], x: u8, y: u8, n: u8) {
         self.v[0xF] = 0;
         let vx = self.v[x as usize];
         let vy = self.v[y as usize];
@@ -186,11 +183,11 @@ impl CPU {
                 let j = (vx as usize + bit) % 64;
                 let index = j + 64 * i;
                 let old_pixel = buffer[index];
-                let new_pixel = ((value >> (7 - bit)) & 0b1) as u32 * FG_COLOR;
+                let new_pixel = ((value >> (7 - bit)) & 0b1) as u8;
 
                 buffer[index] ^= new_pixel;
 
-                if old_pixel == FG_COLOR && new_pixel == FG_COLOR {
+                if old_pixel == 1 && new_pixel == 1 {
                     self.v[0xF] = 1;
                 }
             }
@@ -198,31 +195,31 @@ impl CPU {
         self.pc += 2;
     }
 
-    pub fn skip_if_key_is_pressed(&mut self, x: u8, screen: &Screen) {
-        self.skip_if_condition(screen.is_key_down(self.v[x as usize]));
-        self.pc += 2;
-    }
-
-    pub fn skip_if_key_is_not_pressed(&mut self, x: u8, screen: &Screen) {
-        self.skip_if_condition(!screen.is_key_down(self.v[x as usize]));
-        self.pc += 2;
-    }
+    //     pub fn skip_if_key_is_pressed(&mut self, x: u8, screen: &Screen) {
+    //         self.skip_if_condition(screen.is_key_down(self.v[x as usize]));
+    //         self.pc += 2;
+    //     }
+    //
+    //     pub fn skip_if_key_is_not_pressed(&mut self, x: u8, screen: &Screen) {
+    //         self.skip_if_condition(!screen.is_key_down(self.v[x as usize]));
+    //         self.pc += 2;
+    //     }
 
     pub fn load_delay(&mut self, x: u8) {
         self.v[x as usize] = self.delay;
         self.pc += 2;
     }
 
-    pub fn wait_for_key_press(&mut self, x: u8, screen: &Screen) {
-        if let Some(keys) = screen.is_any_key_down() {
-            if keys.len() > 0 {
-                let key = keys[0];
-                self.v[x as usize] = key_to_hex(key);
-                self.pc += 2;
-            }
-        }
-    }
-
+    //     pub fn wait_for_key_press(&mut self, x: u8, screen: &Screen) {
+    //         if let Some(keys) = screen.is_any_key_down() {
+    //             if !keys.is_empty() {
+    //                 let key = keys[0];
+    //                 self.v[x as usize] = key_to_hex(key);
+    //                 self.pc += 2;
+    //             }
+    //         }
+    //     }
+    //
     pub fn set_delay_timer(&mut self, x: u8) {
         self.delay = self.v[x as usize];
         self.pc += 2;

@@ -1,14 +1,21 @@
-use super::cpu::CPU;
-use super::memory::Memory;
-use super::screen::Screen;
+mod cpu;
+mod memory;
+mod screen;
+
+use crate::cpu::CPU;
+use crate::memory::Memory;
+use crate::screen::Screen;
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug)]
+#[wasm_bindgen]
 pub struct Emulator {
     cpu: CPU,
     memory: Memory,
     screen: Screen,
 }
 
+#[wasm_bindgen]
 impl Emulator {
     pub fn new() -> Self {
         let memory = Memory::new();
@@ -21,17 +28,21 @@ impl Emulator {
         }
     }
 
-    pub fn run(&mut self, rom: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
-        self.memory.load(&rom);
-        while self.screen.is_running() {
-            let opcode = self.cpu.get_op(&self.memory);
-            self.exec_code(opcode);
-            self.screen.update();
-            self.cpu.update();
-        }
-        Ok(())
+    pub fn memory(&self) -> Vec<u8> {
+        self.memory.data.to_vec()
     }
 
+    pub fn tick(&mut self) -> Vec<u8> {
+        let opcode = self.cpu.get_op(&self.memory);
+        self.exec_code(opcode);
+        self.cpu.update();
+        self.screen.buffer.to_vec()
+    }
+
+    pub fn load_rom_data(&mut self, data: Vec<u8>) -> Vec<u8> {
+        self.memory.load(&data);
+        self.memory.data.to_vec()
+    }
     fn exec_code(&mut self, opcode: u16) {
         //println!("{:#02x}", opcode);
         let addr = opcode & 0xFFF;
@@ -42,9 +53,9 @@ impl Emulator {
         let code_id = ((opcode >> 12) & 0xF) as u8;
         match code_id {
             0x0 => match n {
-                0x0 => self.cpu.clear_screen(&mut self.screen),
+                0x0 => self.screen.clear(),
                 0xE => self.cpu.return_from_subroutine(),
-                _ => panic!(format!("Unexpected code {}", opcode)),
+                _ => panic!("Unexpected code {}", opcode),
             },
             1 => self.cpu.jump(addr),
             2 => self.cpu.call(addr),
@@ -63,7 +74,7 @@ impl Emulator {
                 6 => self.cpu.shift_right(x),
                 7 => self.cpu.sub_not_borrow(x, y),
                 0xE => self.cpu.shift_left(x),
-                _ => panic!(format!("Unexpected code {}", opcode)),
+                _ => panic!("Unexpected code {}", opcode),
             },
             9 => self.cpu.skip_not_equal(x, y, true),
             0xA => self.cpu.load_i(addr),
@@ -73,13 +84,13 @@ impl Emulator {
                 .cpu
                 .update_sprite(&self.memory, &mut self.screen.buffer, x, y, n),
             0xE => match kk {
-                0x9E => self.cpu.skip_if_key_is_pressed(x, &self.screen),
-                0xA1 => self.cpu.skip_if_key_is_not_pressed(x, &self.screen),
-                _ => panic!(format!("Unexpected code {}", opcode)),
+                // 0x9E => self.cpu.skip_if_key_is_pressed(x, &self.screen),
+                // 0xA1 => self.cpu.skip_if_key_is_not_pressed(x, &self.screen),
+                _ => panic!("Unexpected code {}", opcode),
             },
             0xF => match kk {
                 0x07 => self.cpu.load_delay(x),
-                0x0A => self.cpu.wait_for_key_press(x, &self.screen),
+                // 0x0A => self.cpu.wait_for_key_press(x, &self.screen),
                 0x15 => self.cpu.set_delay_timer(x),
                 0x18 => self.cpu.set_sound_timer(x),
                 0x1E => self.cpu.set_i(x),
@@ -87,9 +98,9 @@ impl Emulator {
                 0x33 => self.cpu.store_bcd(x, &mut self.memory),
                 0x55 => self.cpu.store_registers(x, &mut self.memory),
                 0x65 => self.cpu.load_registers(x, &mut self.memory),
-                _ => panic!(format!("Unexpected code {}", opcode)),
+                _ => panic!("Unexpected code {}", opcode),
             },
-            _ => panic!(format!("Unexpected code {}", opcode)),
+            _ => panic!("Unexpected code {}", opcode),
         };
     }
 }
